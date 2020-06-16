@@ -8,7 +8,8 @@ from pypipegraph.job import was_inited_before
 from pathlib import Path
 from typing import Callable, List, Union, Any
 import pypipegraph.util as util
-from matplotlib.pyplot import figure as figure
+import pandas as pd
+from matplotlib.figure import Figure
 import pypipegraph as ppg
 import os
 import pickle
@@ -90,7 +91,6 @@ class MPPlotJob(PlotJob):
                     "MPPlotJob(%s) called twice with different parameters" % self.job_id
                 )
             return
-        output_filename = self.job_id
         if not (
             output_filename.suffix == ".png"
             or output_filename.suffix == ".pdf"
@@ -108,15 +108,15 @@ class MPPlotJob(PlotJob):
         self.skip_caching = skip_caching
         self.skip_table = skip_table
         self._fiddle = None
-        self.calc_args = calc_args
-        self.plot_args = calc_args + plot_args
-
-        import pandas as pd
-
+        self.calc_args = calc_args if calc_args is not None else []
+        self.plot_args = plot_args if plot_args is not None else []
+        self.plot_args += self.calc_args
         if not self.skip_caching:
-            self.cache_filename = (
-                Path(util.global_pipegraph.cache_folder) / output_filename
-            )
+            if output_filename.is_absolute():
+                self.cache_filename = Path(util.global_pipegraph.cache_folder) / output_filename.relative_to("/")
+            else:
+                self.cache_filename = Path(util.global_pipegraph.cache_folder) / output_filename
+            self.cache_filename = self.cache_filename.with_suffix(".calc")
             self.cache_filename.parent.mkdir(exist_ok=True, parents=True)
 
             def run_calc():
@@ -144,14 +144,15 @@ class MPPlotJob(PlotJob):
         def run_plot():
             df = self.get_data()
             fig = plot_function(df)
-            if not isinstance(fig, figure):
+            if not isinstance(fig, Figure):
                 raise ppg_exceptions.JobContractError(
                     f"%{output_filename}.plot_function did not return a matplotlib.pyplot.figure object, was {type(fig)}."
                 )
             if self._fiddle is not None and callable(self._fiddle):
                 self._fiddle(fig)
             fig.savefig(output_filename)
-
+        
+        
         FileGeneratingJob.__init__(self, output_filename, run_plot)
         if plot_args is not None:
             Job.depends_on(
@@ -162,11 +163,10 @@ class MPPlotJob(PlotJob):
             cache_job = FileGeneratingJob(self.cache_filename, run_calc)
             if calc_args is not None:
                 cache_job.depends_on(
-                    self, ParameterInvariant(str(self.output_filename) + "_calc_params", self.calc_args)
+                    ParameterInvariant(str(self.output_filename) + "_calc_params", self.calc_args)
                 )
             Job.depends_on(self, cache_job)
             self.cache_job = cache_job
-
         if not skip_table:
 
             def dump_table():

@@ -12,3 +12,4 @@ finally:
 
 
 from .plots import volcanoplot
+from .pipegraph import MPPlotJob
