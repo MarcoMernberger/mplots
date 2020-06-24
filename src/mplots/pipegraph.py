@@ -35,7 +35,7 @@ class MPPlotJob(PlotJob):
         skip_table: bool = False,
         skip_caching: bool = False,
         calc_args: List[Any] = None,
-        plot_args: List[Any] = None
+        plot_args: List[Any] = None,
     ) -> None:
         """
         A plot job that separates data calculation and actual plotting in order
@@ -151,14 +151,12 @@ class MPPlotJob(PlotJob):
             if self._fiddle is not None and callable(self._fiddle):
                 self._fiddle(fig)
             fig.savefig(output_filename)
-        
-        
+
         FileGeneratingJob.__init__(self, output_filename, run_plot)
         if plot_args is not None:
             Job.depends_on(
                 self, ParameterInvariant(str(self.output_filename) + "_plot_params", self.plot_args)
             )
-
         if not self.skip_caching:
             cache_job = FileGeneratingJob(self.cache_filename, run_calc)
             if calc_args is not None:
@@ -188,7 +186,7 @@ class MPPlotJob(PlotJob):
         else:
             self.table_job = None
 
-    def add_another_plot(self, output_filename: Path, plot_function: Callable, plot_args: None) -> Job:
+    def add_another_plot(self, output_filename: Path, plot_function: Callable, plot_args: List[Any] = None) -> Job:
         """
         Add another plot job that runs on the same data as the original one.
 
@@ -213,7 +211,7 @@ class MPPlotJob(PlotJob):
         def run_plot():
             df = self.get_data()
             fig = plot_function(df)
-            if not isinstance(fig, figure):
+            if not isinstance(fig, Figure):
                 raise ppg_exceptions.JobContractError(
                     f"%{output_filename}.plot_function did not return a matplotlib.pyplot.figure object, was {type(fig)}."
                 )
@@ -224,6 +222,15 @@ class MPPlotJob(PlotJob):
             job.depends_on(
                 ParameterInvariant(str(output_filename) + "_params", plot_args)
             )
-        job.depends_on(FunctionInvariant(str(output_filename) + "_func", plot_function))
+        job.depends_on(FunctionInvariant(str(output_filename) + "_plotfunc", plot_function))
         job.depends_on(self.cache_job)
         return job
+
+    def plot_depends_on(self, job_or_list):
+        if isinstance(job_or_list, Job):
+            self.prerequisites.add(job_or_list)
+        elif hasattr(job_or_list, "__iter__"):
+            for job in job_or_list:
+                self.prerequisites.add(job)
+        else:
+            raise ValueError(f"Unexpected joblist: {type(job_or_list)}.")
