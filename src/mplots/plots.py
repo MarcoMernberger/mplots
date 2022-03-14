@@ -233,3 +233,84 @@ def logFC_correlation(
         return fig
 
     return MPPlotJob(outfile, calc, plot, calc_args=calc_args, plot_args=sorted(list(kwargs.items()))).depends_on(deps)
+
+
+# a function to plot the differential genes in comparison
+def plot_fc_scatter_vioin(df: DataFrame, fc_columns_dict: Dict[str, str], fdr_columns_dict: Dict[str, str], reference_column: str, alpha: float=.05):
+    """Plots a scatter/violin plot with labels indicating values that are >0 or <0 in a given reference column"""
+    genes_up_in_ref = df[df[reference_column] > 0].index
+    genes_down_in_ref = df[df[reference_column] < 0].index
+    
+    def _make_join_index(df):
+        df = df.reset_index()
+        df["join"] = df[["gene_stable_id", "variable"]].agg(",".join, axis=1)
+        df = df.set_index("join")
+        return df
+    rng = np.random.default_rng(seed=12345)
+    sample_names = list(fc_columns_dict.values())
+    df_plot = df.rename(columns=fc_columns_dict)[sample_names].melt(value_name="logFC", ignore_index=False)
+    df_plot = _make_join_index(df_plot)
+    other_df = df.rename(
+        columns=fdr_columns_dict
+    )[sample_names].melt(value_name="FDR", ignore_index=False)
+    other_df = _make_join_index(other_df)
+    df_plot = df_plot.join(other_df[["FDR"]])
+    
+    group_to_numbers = dict(zip(df_plot.variable.unique(), np.arange(len(fc_columns_dict))+1))
+    df_plot["num"] = df_plot.variable.map(group_to_numbers)
+    f = plt.figure(figsize=(10, 6))
+    for label, index in [
+        (f"up in {fc_columns_dict[reference_column]}", genes_up_in_ref),
+        (f"down in {fc_columns_dict[reference_column]}", genes_down_in_ref),
+    ]:
+        df_sub = df_plot[df_plot["gene_stable_id"].isin(index)]
+        color = next(plt.gca()._get_lines.prop_cycler)['color']
+        for suffix, marker, df_sub_fdr in [
+            ("(*)", ".", df_sub[df_sub.FDR < alpha]),
+            ("(n.s.)", "x", df_sub[df_sub.FDR >= alpha]),
+        ]:
+            xs = rng.uniform(low=-.3, high=.3, size=df_sub_fdr.shape[0]) + df_sub_fdr.num
+            plt.scatter(xs, df_sub_fdr.logFC, marker=marker, label=f"{label} {suffix}", color=color)
+    labels = list(fc_columns_dict.values())
+    plt.violinplot(df[list(fc_columns_dict.keys())])
+    plt.axhline(y=1, color='r', linestyle='-', alpha=.3)
+    plt.axhline(y=0, color='r', linestyle='-', alpha=.3)
+    plt.axhline(y=-1, color='r', linestyle='-', alpha=.3)
+    plt.xticks(np.arange(len(labels))+1, labels)
+    plt.ylabel("log2FC")
+    plt.legend()
+    plt.close()
+    return f
+
+
+def plot_expression(df: DataFrame, tpms: List[str], logfc_column: str):
+    """
+    Plots expression values (TPM) and means per gene. 
+    Left are genes upregulated in logfc_column, right are down-regulated genes.
+    """
+    ll = len(df.index.unique()) / 5
+    f, axes = plt.subplots(1, 2, figsize=(14, ll))
+    ii = 0
+    for tick_position, direction, df_difference in [("left", "up", df[df[logfc_column] > 0]), ("right", "down", df[df[logfc_column] < 0])]:
+        plt.sca(axes[ii])
+        df_plot = df_difference[tpms+["mean(SKI-)", "mean(SKI+)"]].melt(var_name="sample", value_name="TPM", ignore_index=False)
+        mapping = dict(zip(df_difference.index.values, np.arange(df_difference.shape[0])))
+        df_plot["y"] = df_plot.index.map(mapping)
+        df_plot = df_plot.fillna(0)
+        for off, gr, mean_col in [(-.05, "SKI-", "mean(SKI-)"), (.05, "SKI+", "mean(SKI+)")]:
+            color = next(plt.gca()._get_lines.prop_cycler)['color']
+            df_sub = df_plot[df_plot["sample"].str.startswith(gr)]
+            plt.scatter(df_sub.TPM, df_sub.y+off, color=color, label=gr, alpha=.3, s=10)
+            df_sub = df_plot[df_plot["sample"]==mean_col]
+            plt.scatter(df_sub.TPM, df_sub.y+off, color=color, label=mean_col, marker="|", alpha=1, s=100)
+            plt.gca().yaxis.set_ticks_position(tick_position)
+            for yy in df_sub.y:
+                plt.axhline(y=yy+.5, color='grey', linestyle="-", alpha=.3, linewidth=.5)
+        plt.yticks(ticks=df_sub.y, labels=df_sub.index)
+        plt.ylim([-1, df_sub.shape[0]+1])
+        plt.title(direction)
+        plt.xlabel("TPM")
+        plt.legend(loc="lower right")
+        plt.ylabel("Gene")
+        ii += 1
+    return f

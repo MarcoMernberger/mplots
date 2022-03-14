@@ -4,7 +4,6 @@
 """pipegraph.py: Contains methods and classes for pypipoegraph compatibility."""
 
 from pypipegraph import Job, PlotJob, ppg_exceptions, FileGeneratingJob, ParameterInvariant, FunctionInvariant
-from pypipegraph.job import was_inited_before
 from pathlib import Path
 from typing import Callable, List, Union, Any
 import pypipegraph.util as util
@@ -80,17 +79,6 @@ class MPPlotJob(PlotJob):
         ppg_exceptions.JobContractError
             If the plot_function did not return a matplotlib.pyplot.figure.
         """
-        if was_inited_before(self, MPPlotJob):
-            if (
-                skip_caching != self.skip_caching
-                or skip_table != self.skip_table
-                or calc_args != self.calc_args
-                or plot_args != self.plot_args
-            ):
-                raise ValueError(
-                    "MPPlotJob(%s) called twice with different parameters" % self.job_id
-                )
-            return
         if not (
             output_filename.suffix == ".png"
             or output_filename.suffix == ".pdf"
