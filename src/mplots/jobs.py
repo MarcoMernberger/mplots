@@ -3,7 +3,14 @@
 
 """pipegraph.py: Contains methods and classes for pypipoegraph compatibility."""
 
-from pypipegraph import Job, PlotJob, ppg_exceptions, FileGeneratingJob, ParameterInvariant, FunctionInvariant
+from pypipegraph import (
+    Job,
+    PlotJob,
+    ppg_exceptions,
+    FileGeneratingJob,
+    ParameterInvariant,
+    FunctionInvariant,
+)
 from pathlib import Path
 from typing import Callable, List, Union, Any
 import pypipegraph.util as util
@@ -85,7 +92,8 @@ class MPPlotJob(PlotJob):
             or output_filename.suffix == ".svg"
         ):
             raise ValueError(
-                f"Don't know how to create this file {output_filename}, must end on .png or .pdf or .svg")
+                f"Don't know how to create this file {output_filename}, must end on .png or .pdf or .svg"
+            )
 
         self.output_filename = output_filename
         self.filenames = [output_filename]
@@ -101,7 +109,9 @@ class MPPlotJob(PlotJob):
         self.plot_args += self.calc_args
         if not self.skip_caching:
             if output_filename.is_absolute():
-                self.cache_filename = Path(util.global_pipegraph.cache_folder) / output_filename.relative_to("/")
+                self.cache_filename = Path(
+                    util.global_pipegraph.cache_folder
+                ) / output_filename.relative_to("/")
             else:
                 self.cache_filename = Path(util.global_pipegraph.cache_folder) / output_filename
             self.cache_filename = self.cache_filename.with_suffix(".calc")
@@ -174,7 +184,9 @@ class MPPlotJob(PlotJob):
         else:
             self.table_job = None
 
-    def add_another_plot(self, output_filename: Path, plot_function: Callable, plot_args: List[Any] = None) -> Job:
+    def add_another_plot(
+        self, output_filename: Path, plot_function: Callable, plot_args: List[Any] = None
+    ) -> Job:
         """
         Add another plot job that runs on the same data as the original one.
 
@@ -207,9 +219,7 @@ class MPPlotJob(PlotJob):
 
         job = FileGeneratingJob(output_filename, run_plot)
         if plot_args is not None:
-            job.depends_on(
-                ParameterInvariant(str(output_filename) + "_params", plot_args)
-            )
+            job.depends_on(ParameterInvariant(str(output_filename) + "_params", plot_args))
         job.depends_on(FunctionInvariant(str(output_filename) + "_plotfunc", plot_function))
         job.depends_on(self.cache_job)
         return job

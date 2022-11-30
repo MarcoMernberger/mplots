@@ -12,5 +12,6 @@ finally:
 
 
 from .plots import volcanoplot
-from .pipegraph import MPPlotJob
+from .jobs import MPPlotJob
 from .heatmaps import heatmap
+from .scatter import volcano_plot, volcano_calc
