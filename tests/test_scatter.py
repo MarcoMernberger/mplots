@@ -14,7 +14,6 @@ __license__ = "mit"
 
 
 def test_volcano_calc_columns(test_fc_frame):
-    print(test_fc_frame.columns)
     df = scatter.volcano_calc(test_fc_frame, logFC_column="log2FC", fdr_column="fdr")
     assert isinstance(df, DataFrame)
     assert "group" in df.columns
@@ -31,5 +30,4 @@ def test_volcano_plot(test_fc_frame):
     df = scatter.volcano_calc(test_fc_frame, logFC_column="log2FC", fdr_column="fdr")
     assert isinstance(df, DataFrame)
     fig = scatter.volcano_plot(df)
-    print(type(fig))
     assert isinstance(fig, Figure)
