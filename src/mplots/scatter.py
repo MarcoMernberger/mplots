@@ -37,7 +37,7 @@ def volcano_calc(
     fdr_column: str = "p-value",
 ) -> DataFrame:
     """
-    Prepares a givedn data frame for volcano plot.
+    Prepares a given DataFrame for volcano plot.
 
     It adds a column 'group' to the dataframe, stratifying data points into
     significant and non-significant groups coded by color, renames the fold change

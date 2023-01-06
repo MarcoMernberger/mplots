@@ -11,7 +11,7 @@ from .jobs import MPPlotJob
 import pandas as pd
 import pypipegraph as ppg
 import scipy.stats as st
-from .scatter import *
+from .scatter import volcano_calc, volcano_plot
 
 __author__ = "Marco Mernberger"
 __copyright__ = "Copyright (c) 2020 Marco Mernberger"
@@ -71,6 +71,7 @@ def volcano(
         The FilegeneratingJob that creates the file.
     """
     deps = dependencies
+    calc_args = [fdr_column, logFC_column, significance_threshold, fc_threhold]
     if isinstance(genes_or_df, DataFrame):
         default_name = "default"
         deps.append(genes_or_df.load())
@@ -86,7 +87,6 @@ def volcano(
     if isinstance(outfile, str):
         outfile = Path(outfile)
     outfile.parent.mkdir(parents=True, exist_ok=True)
-    calc_args = [fdr_column, logFC_column, significance_threshold, fc_threhold]
 
     def calc():
         if isinstance(genes_or_df, DataFrame):
@@ -105,9 +105,15 @@ def volcano(
     def plot(df):
         return volcano_plot(df, figsize=figsize, title=title)
 
-    return MPPlotJob(
-        outfile, calc, plot, calc_args=calc_args, plot_args=sorted(list(kwargs.items()))
-    ).depends_on(deps)
+    job = MPPlotJob(
+        outfile,
+        calc,
+        plot,
+        plot_args=sorted(list(kwargs.items())),
+        calc_args=calc_args,
+        dependencies=deps,
+    )
+    return job
 
 
 def volcanoplot(
