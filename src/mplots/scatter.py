@@ -2,15 +2,6 @@
 # -*- coding: utf-8 -*-
 
 """plots.py: Contains some routine plots."""
-from mbf.genomics.genes import Genes
-from pathlib import Path
-from typing import Optional, Callable, List, Dict, Tuple, Union
-from pypipegraph import Job
-from pandas import DataFrame
-from .jobs import MPPlotJob
-import pandas as pd
-import pypipegraph as ppg
-import scipy.stats as st
 
 
 __author__ = "Marco Mernberger"
@@ -18,15 +9,32 @@ __copyright__ = "Copyright (c) 2020 Marco Mernberger"
 __license__ = "mit"
 
 
-import pandas as pd
+import numpy as np
 import matplotlib
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
-import numpy as np
-import pypipegraph as ppg
-from pathlib import Path
+import matplotlib.gridspec as grid
+import pandas as pd
+import scipy.stats as st
+import matplotlib.pyplot as plt
+
+from pandas import DataFrame
 from matplotlib.figure import Figure
+from matplotlib.colors import Colormap
+from pypipegraph2 import Job
+from .functions import default_cycler
+from typing import Callable
+from .functions import default_cycler
+from cycler import Cycler
+
+# import pypipegraph2 as ppg
+# from mbf.genomics.genes import Genes
+# from pathlib import Path
+# from typing import Optional, Callable, List, Dict, Tuple, Union
+# from .jobs import MPPlotJob
+# from typing import Union, Tuple
+# from pathlib import Path
 
 
 def volcano_calc(
@@ -65,7 +73,7 @@ def volcano_calc(
     df["group"] = ["grey"] * len(df)
     df["group"][(df["logFC"].values >= fc_threshold) & (df["-log10(p-value)"] <= alpha)] = "red"
     df["group"][(df["logFC"].values <= -fc_threshold) & (df["-log10(p-value)"] <= alpha)] = "blue"
-    df["logFC"] = -np.log10(df["logFC"])
+    df["-log10(p-value)"] = -np.log10(df["-log10(p-value)"])
     return df
 
 
@@ -101,10 +109,15 @@ def volcano_plot(
     """
     labels = kwargs.get("labels", {"grey": "non-sign.", "red": "up", "blue": "down"})
     figsize = kwargs.get("figsize", (10, 10))
+    fontsize = kwargs.get("fontsize", 10)
+    fontsize_title = kwargs.get("fontsize_title", fontsize)
+    fontsize_ticks = kwargs.get("fontsize_ticks", fontsize)
+    fontsize_legend = kwargs.get("fontsize_legend", fontsize)
     title = kwargs.get("title", "Volcano")
     fig = plt.figure(figsize=figsize)
     xlabel = kwargs.get("xlabel", logFC_column)
     ylabel = kwargs.get("ylabel", r"-log10($p_{corrected}$)")
+
     for color, df_sub in df.groupby("group"):
         plt.plot(
             df_sub[logFC_column].values,
@@ -117,8 +130,104 @@ def volcano_plot(
     plt.axhline(-np.log10(alpha), color="lightgrey")
     plt.axvline(-fc_threshold, color="lightgrey")
     plt.axvline(fc_threshold, color="lightgrey")
-    plt.ylabel(ylabel)
-    plt.xlabel(xlabel)
-    plt.legend()
-    plt.title(title)
+    plt.ylabel(ylabel, fontsize=fontsize)
+    plt.xlabel(xlabel, fontsize=fontsize)
+    plt.xticks(fontsize=fontsize_ticks)
+    plt.yticks(fontsize=fontsize_ticks)
+    plt.legend(fontsize=fontsize_legend)
+    plt.title(title, fontsize=fontsize_title)
     return fig
+
+
+def generate_dr_plot(
+    df: DataFrame,
+    title: str = None,
+    class_label_column: str = None,
+    label_function: Callable = lambda x: x,
+    custom_cycler=None,
+    **params,
+) -> Figure:
+    """
+    This assumes that self.transformed_matrix is an array-like object with shape (n_samples, n_components)
+    """
+    fontsize_title = params.get("fontsize_title", 12)
+    custom_order = params.get("custom_order", None)
+    show_names = params.get("show_names", False)
+    x_label = params.get("xlabel", None)
+    y_label = params.get("ylabel", None)
+    dpi = params.get("dpi", 100)
+    fig_x = params.get("fig_x", 8)
+    fig_y = params.get("fig_y", 8)
+    marker_size = params.get("marker_size", None)
+    mfc = params.get("mfc", None)
+    if not isinstance(custom_cycler, Cycler):
+        custom_cycler = default_cycler()
+    f = plt.figure(figsize=(fig_x, fig_y), dpi=dpi, frameon=True, edgecolor="k", linewidth=2)
+    axe = plt.gca()
+    axe.set_prop_cycle(custom_cycler)
+    columns_to_use = list(df.columns.values)
+    if x_label is None:
+        x_label = f"{columns_to_use[0]}"
+    if y_label is None:
+        y_label = f"{columns_to_use[1]}"
+    class_labels = class_label_column in df.columns
+    labels = "labels" in df.columns
+    if class_labels:
+        columns_to_use.remove(class_label_column)
+        if custom_order is not None:
+            df["custom_order"] = [
+                custom_order.find(label) for label in df[class_label_column].values
+            ]
+            df = df.sort_values("custom_order")
+    else:
+        df[class_label_column] = [""] * len(df)
+    if not labels:
+        df["labels"] = df.index
+    else:
+        columns_to_use.remove("labels")
+    dimensions = params.get("dimension", len(df.columns))
+    if dimensions < 2:
+        raise ValueError(
+            f"No 2D projection possible with only {dimensions} components, set k >= 2."
+        )
+    if len(columns_to_use) > 2:
+        columns_to_use = columns_to_use[:2]
+
+    for label, df_sub in df.groupby(class_label_column):
+        plt.plot(
+            df_sub[columns_to_use[0]].values,
+            df_sub[columns_to_use[1]].values,
+            markersize=marker_size,
+            mfc=mfc,
+            alpha=0.8,
+            label=label,
+            linestyle="None",
+        )
+    if title is not None:
+        plt.title(title, fontsize=fontsize_title)
+    elif class_labels:
+        plt.title("Transformed samples with classes", {"fontsize": fontsize_title})
+    else:
+        plt.title("Transformed samples without classes", {"fontsize": fontsize_title})
+    xmin = df[columns_to_use[0]].values.min()
+    ymin = df[columns_to_use[1]].values.min()
+    xmax = df[columns_to_use[0]].values.max()
+    ymax = df[columns_to_use[1]].values.max()
+    plt.gca().set_xlim([1.3 * xmin, 1.3 * xmax])
+    plt.gca().set_ylim([1.3 * ymin, 1.3 * ymax])
+    plt.gca().set_xlabel(x_label)
+    plt.gca().set_ylabel(y_label)
+    if class_labels:
+        plt.gca().legend(loc="best")
+    if show_names:
+        for i, row in df.iterrows():
+            plt.annotate(
+                label_function(row["labels"]),
+                xy=(row[columns_to_use[0]], row[columns_to_use[1]]),
+                xytext=(-1, 1),
+                textcoords="offset points",
+                ha="right",
+                va="bottom",
+                size=8,
+            )
+    return f
