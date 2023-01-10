@@ -11,7 +11,13 @@ finally:
     del get_distribution, DistributionNotFound
 
 
-from .plots import volcano
+from .plots import *
 from .jobs import MPPlotJob
 from .heatmaps import heatmap
+<<<<<<< HEAD
 from .scatter import volcano_plot, volcano_calc, plot_correlation
+=======
+from .scatter import volcano_plot, volcano_calc, generate_dr_plot, plot_correlation
+from .functions import *
+from .bars import *
+>>>>>>> 2d1fedbfbe7a84d951a0318e1f06909feb5b14ae

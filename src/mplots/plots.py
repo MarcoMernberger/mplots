@@ -161,11 +161,11 @@ def volcanoplot(
     deps = dependencies
     if isinstance(genes_or_df, DataFrame):
         default_name = "default"
-        deps.append(genes_or_df.load())
         results_dir = Path("results/plots")
     else:
         default_name = f"{genes_or_df.name}"
         results_dir = genes_or_df.result_dir
+        deps.append(genes_or_df.load())
     name = kwargs.get("name", default_name)
     figsize = kwargs.get("figsize", (10, 10))
     title = kwargs.get("title", name)
