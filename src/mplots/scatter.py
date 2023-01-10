@@ -37,7 +37,7 @@ def volcano_calc(
     fdr_column: str = "p-value",
 ) -> DataFrame:
     """
-    Prepares a given DataFrame for volcano plot.
+    Prepares a givedn data frame for volcano plot.
 
     It adds a column 'group' to the dataframe, stratifying data points into
     significant and non-significant groups coded by color, renames the fold change
@@ -121,4 +121,115 @@ def volcano_plot(
     plt.xlabel(xlabel)
     plt.legend()
     plt.title(title)
+    return fig
+
+
+def plot_logfcs(
+    name,
+    genes,
+    cond1,
+    cond2,
+    fc_col1,
+    fc_col2,
+    mangler,
+    logfc=1,
+    fdr=0.05,
+    show_names=True,
+    **kwargs,
+):
+    fontsize = kwargs.get("fontsize", 10)
+    fontsize_title = kwargs.get("fontsize_title", fontsize)
+    fontsize_ticks = kwargs.get("fontsize_ticks", fontsize)
+    fontsize_legend = kwargs.get("fontsize_legend", fontsize)
+    fontsize_label = kwargs.get("fontsize_label", fontsize)
+    fontsize_text = kwargs.get("fontsize_text", fontsize)
+    figsize = kwargs.get("figsize", (10, 10))
+    title = kwargs.get(
+        "title",
+        f"Correlation of Log2FC on {name}\n(logFC threshold = {logfc}, FDR threshold = {fdr})",
+    )
+    fig = plt.figure(figsize=figsize)
+    rho, p = st.pearsonr(genes[fc_col1], genes[fc_col2])
+    fdr_col1 = fc_col1.replace("log2FC", "FDR")
+    fdr_col2 = fc_col2.replace("log2FC", "FDR")
+    sig1 = (genes[fc_col1].abs() >= logfc) & (genes[fdr_col1].abs() < fdr)
+    sig2 = (genes[fc_col2].abs() >= logfc) & (genes[fdr_col2].abs() < fdr)
+    sig_both = sig1 & sig2
+    no_sig = ~(sig_both | sig1 | sig2)
+    max_val = np.amax([np.abs(genes[fc_col1]), np.abs(genes[fc_col2])])
+    plt.xlim([-max_val, max_val])
+    plt.ylim([-max_val, max_val])
+    for sig, label, color in [
+        (no_sig, "non-sig.", "grey"),
+        (sig1, cond1, "b"),
+        (sig2, cond2, "r"),
+        (sig_both, "both", "g"),
+    ]:
+        genes_selected = genes[sig]
+        plt.plot(
+            genes_selected[fc_col1],
+            genes_selected[fc_col2],
+            ls="",
+            marker=".",
+            color=color,
+            label=label,
+        )
+    if show_names:
+        genes_selected = genes[sig_both]
+        for i, row in genes_selected.iterrows():
+            plt.annotate(
+                row["name"],
+                xy=(row[fc_col1], row[fc_col2]),
+                xytext=(-1, 1),
+                textcoords="offset points",
+                ha="right",
+                va="bottom",
+                size=fontsize_text,
+            )
+
+    plt.gca().axhline(1, ls=(0, (5, 10)), lw=0.5, color="k")
+    plt.gca().axhline(-1, ls=(0, (5, 10)), lw=0.5, color="k")
+    plt.gca().axvline(1, ls=(0, (5, 10)), lw=0.5, color="k")
+    plt.gca().axvline(-1, ls=(0, (5, 10)), lw=0.5, color="k")
+    plt.xlabel(mangler(fc_col1), fontsize=fontsize_label)
+    plt.ylabel(mangler(fc_col2), fontsize=fontsize_label)
+    plt.xticks(fontsize=fontsize_ticks)
+    plt.yticks(fontsize=fontsize_ticks)
+    plt.title(title, fontsize=fontsize_title)
+    plt.legend(fontsize=fontsize_legend, loc="upper right")
+    plt.tight_layout()
+    plt.text(0.02, 0.96, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes)
+    return fig
+
+
+def plot_correlation(df, column_x, column_y, pearson=True, **kwargs):
+    fontsize = kwargs.get("fontsize", 10)
+    fontsize_title = kwargs.get("fontsize_title", fontsize)
+    fontsize_ticks = kwargs.get("fontsize_ticks", fontsize)
+    fontsize_legend = kwargs.get("fontsize_legend", fontsize)
+    fontsize_label = kwargs.get("fontsize_label", fontsize)
+    fontsize_text = kwargs.get("fontsize_text", fontsize)
+    figsize = kwargs.get("figsize", (6, 6))
+    xlabel = kwargs.get("xlabel", column_x)
+    ylabel = kwargs.get("ylabel", column_y)
+    title = kwargs.get(
+        "title",
+        f"Correlation of {column_x} and {column_y}",
+    )
+    fig = plt.figure(figsize=figsize)
+    plt.plot(
+        df[column_x],
+        df[column_y],
+        ls="",
+        marker=".",
+    )
+    if pearson:
+        rho, p = st.pearsonr(df[column_x], df[column_y])
+    else:
+        rho, p = st.spearmanr(df[column_x], df[column_y])
+    plt.xlabel(xlabel, fontsize=fontsize_label)
+    plt.ylabel(ylabel, fontsize=fontsize_label)
+    plt.title(title, fontsize=fontsize_title)
+    plt.tight_layout()
+    plt.text(0.02, 0.94, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes)
     return fig
