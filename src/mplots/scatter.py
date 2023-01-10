@@ -231,3 +231,36 @@ def generate_dr_plot(
                 size=8,
             )
     return f
+
+
+def plot_correlation(df, column_x, column_y, pearson=True, **kwargs):
+    fontsize = kwargs.get("fontsize", 10)
+    fontsize_title = kwargs.get("fontsize_title", fontsize)
+    fontsize_ticks = kwargs.get("fontsize_ticks", fontsize)
+    fontsize_legend = kwargs.get("fontsize_legend", fontsize)
+    fontsize_label = kwargs.get("fontsize_label", fontsize)
+    fontsize_text = kwargs.get("fontsize_text", fontsize)
+    figsize = kwargs.get("figsize", (6, 6))
+    xlabel = kwargs.get("xlabel", column_x)
+    ylabel = kwargs.get("ylabel", column_y)
+    title = kwargs.get(
+        "title",
+        f"Correlation of {column_x} and {column_y}",
+    )
+    fig = plt.figure(figsize=figsize)
+    plt.plot(
+        df[column_x],
+        df[column_y],
+        ls="",
+        marker=".",
+    )
+    if pearson:
+        rho, p = st.pearsonr(df[column_x], df[column_y])
+    else:
+        rho, p = st.spearmanr(df[column_x], df[column_y])
+    plt.xlabel(xlabel, fontsize=fontsize_label)
+    plt.ylabel(ylabel, fontsize=fontsize_label)
+    plt.title(title, fontsize=fontsize_title)
+    plt.tight_layout()
+    plt.text(0.02, 0.94, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes)
+    return fig

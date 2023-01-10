@@ -14,6 +14,6 @@ finally:
 from .plots import *
 from .jobs import MPPlotJob
 from .heatmaps import heatmap
-from .scatter import volcano_plot, volcano_calc, generate_dr_plot
+from .scatter import volcano_plot, volcano_calc, generate_dr_plot, plot_correlation
 from .functions import *
 from .bars import *
