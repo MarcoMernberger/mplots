@@ -7,10 +7,12 @@ from pathlib import Path
 from typing import Optional, Callable, List, Dict, Tuple, Union
 from pypipegraph import Job
 from pandas import DataFrame
-from .jobs import MPPlotJob
 import pandas as pd
 import pypipegraph as ppg
 import scipy.stats as st
+import inspect
+from abc import ABC, abstractmethod
+from .jobs import MPPlotJob
 from .scatter import volcano_calc, volcano_plot
 
 __author__ = "Marco Mernberger"
@@ -30,8 +32,9 @@ from pathlib import Path
 
 def volcano(
     genes_or_df: Union[Genes, DataFrame],
-    fdr_column: str,
     logFC_column: str,
+    p_column: str,
+    fdr_column: str,
     significance_threshold: float = 0.05,
     fc_threhold: float = 1.0,
     outfile: Optional[Path] = None,
@@ -51,7 +54,7 @@ def volcano(
     ----------
     genes_or_df : Union[Genes, DataFrame]
         The data object that holds the numbers to plot.
-    fdr_column : str
+    p_column : str
         The column name of the FDR values.
     logFC_column : str
         The column name of the logFC values.
@@ -71,7 +74,7 @@ def volcano(
         The FilegeneratingJob that creates the file.
     """
     deps = dependencies
-    calc_args = [fdr_column, logFC_column, significance_threshold, fc_threhold]
+    calc_args = [p_column, logFC_column, significance_threshold, fc_threhold]
     if isinstance(genes_or_df, DataFrame):
         default_name = "default"
         deps.append(genes_or_df.load())
@@ -98,6 +101,7 @@ def volcano(
             fc_threshold=fc_threhold,
             alpha=significance_threshold,
             logFC_column=logFC_column,
+            p_column=p_column,
             fdr_column=fdr_column,
         )
         return df
@@ -432,3 +436,145 @@ def plot_expression(df: DataFrame, tpms: List[str], logfc_column: str):
         plt.ylabel("Gene")
         ii += 1
     return f
+
+
+def plot_means(df, **kwargs):
+    figsize = kwargs.get("figsize", (10, 10))
+    means = (
+        df_counts.apply(["mean", "min", "max"])
+        .sort_values(axis=1, by="mean", ascending=False)
+        .transpose()
+    )
+    fig = plt.figure(figsize=figsize)
+    plt.plot(means, label=means.columns.values)
+    plt.yscale("log")
+    plt.legend()
+    plt.xticks([])
+    plt.tight_layout()
+    return fig
+
+
+def plot_boxplots(df, **kwargs):
+    figsize = kwargs.pop("figsize", (10, 5))
+    sym = kwargs.pop("sym", "b.")
+    rotation = kwargs.pop("rotation", 75)
+    ylabel = kwargs.pop("ylabel", None)
+    title = kwargs.pop("title", None)
+    flierprops = kwargs.pop("flierprops", {"markersize": 2})
+    notch = kwargs.pop("notch", True)
+    figure = plt.figure(figsize=figsize)
+    plt.boxplot(df, patch_artist=True, labels=df.columns, sym=sym, flierprops=flierprops, **kwargs)
+    plt.xticks(rotation=rotation)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    return figure
+
+
+def plot_hist(df, bins=50, topx=6, **kwargs):
+    topx = min(topx, len(df.columns))
+    title = kwargs.pop("title", None)
+    figsize = kwargs.pop("figsize", None)
+    f = plt.figure(figsize=figsize)
+    df[df.columns[:topx]].hist(bins=bins)
+    plt.tight_layout()
+    plt.title(title)
+    return f
+
+
+"""
+Plots - wrapper for matplotlib plots
+
+we need a plot function.
+sometimes we need a calc function as well.
+we need a way to extract keyword arguments from kwargs that are accepted by each method.
+
+should be callable
+
+__call__ should accept *kwargs
+we need a way to handle default params
+we can have same kwargs for different plotlib functions --> solution: set all the same and introduce special args
+
+should now acceptable arguments
+"""
+
+
+class Plot(ABC):
+    def __init__(self, name):
+        self.name = name
+        self.parameters = parameters
+
+    @abstractmethod
+    def __call__(self):
+        pass
+
+    @abstractmethod
+    def print_parameter(self):
+        ...
+
+    def __handle_kwargs(self, kwargs, function) -> dict:
+        args = inspect.getfullargspec(function).args
+        new_kwargs = {key: kwargs[key] for key in args if key in kwargs}
+        return new_kwargs
+
+    @abstractmethod
+    def calc(self, **kwargs):
+        pass
+
+    @abstractmethod
+    def plot(self, **kwargs):
+        pass
+
+    def plot_func_arguments(self):
+        pass
+
+
+class Box(Plot):
+    def __init__(self):
+        super().__init__("Boxplot")
+
+    def __call__(df, **kwargs):
+        return figure
+
+    def plot_boxplots(df, **kwargs):
+        figsize = kwargs.get("figsize", (10, 5))
+        sym = kwargs.get("sym", "b.")
+        rotation = kwargs.get("rotation", 75)
+        title = kwargs.get("title", None)
+        flierprops = kwargs.get("flierprops", {"markersize": 2})
+        notch = kwargs.get("notch", True)
+        figure = plt.figure(figsize=figsize)
+        plot_kwargs = __handle_kwargs(kwargs, plt.boxplot)
+        plt.boxplot(
+            df, patch_artist=True, labels=df.columns, sym=sym, flierprops=flierprops, **plot_kwargs
+        )
+        plt.xticks(rotation=rotation)
+        plt.title(title)
+        return figure
+
+    def get_args(self, **kwargs):
+        figsize = kwargs.get("figsize", (10, 5))
+        fontsize = kwargs.get("fontsize", 10)
+        fontsize_title = kwargs.get("fontsize_title", fontsize)
+        fontsize_ticks = kwargs.get("fontsize_ticks", fontsize)
+        fontsize_legend = kwargs.get("fontsize_legend", fontsize)
+        title = kwargs.get("title", "Volcano")
+
+
+# f = plot_boxplots((df_counts +1).apply("log2"), title="log2(raw count + 1)")
+
+
+# kwargs = {"figsize": (10, 12), "bla": 3, "notch": True, "label": 12}
+# print(__handle_kwargs(kwargs, plt.figure))
+# print(__handle_kwargs(kwargs, plt.boxplot))
+# print(__handle_kwargs(kwargs, plt.xlabel))
+# inspect.getfullargspec(plt.plot)
+
+
+def save_figure(f, folder, name):
+    folder.mkdir(exist_ok=True, parents=True)
+    for suffix in [".png", ".svg", ".pdf"]:
+        f.savefig(folder / (name + suffix))
+
+
+if __name__ == "__main__":
+    print(inspect.getfullargspec(plt.plot))

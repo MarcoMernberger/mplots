@@ -32,9 +32,8 @@ from pandas import DataFrame
 from matplotlib.figure import Figure
 from matplotlib.colors import Colormap
 from pypipegraph2 import Job
-from .functions import default_cycler
 from typing import Callable
-from .functions import default_cycler
+from .customization import default_cycler
 from cycler import Cycler
 
 # import pypipegraph2 as ppg
@@ -51,7 +50,8 @@ def volcano_calc(
     fc_threshold: float = 1,
     alpha: float = 0.05,
     logFC_column: str = "logFC",
-    fdr_column: str = "p-value",
+    p_column: str = "p-value",
+    fdr_column: str = "FDR",
 ) -> DataFrame:
     """
     Prepares a givedn data frame for volcano plot.
@@ -71,17 +71,19 @@ def volcano_calc(
     logFC_column : str, optional
         Column name of logFC column, by default "logFC".
     fdr_column : str, optional
-        Column name of FDR column, by default "p-value".
+        Column name of p-value, by default "p-value".
 
     Returns
     -------
     DataFrame
         DataFrame with group variable containing the colors for the plot.
     """
-    df = df.rename(columns={logFC_column: "logFC", fdr_column: "-log10(p-value)"})
+    df = df.rename(
+        columns={logFC_column: "logFC", p_column: "-log10(p-value)", fdr_column: "p_{corrected}"}
+    )
     df["group"] = ["grey"] * len(df)
-    df["group"][(df["logFC"].values >= fc_threshold) & (df["-log10(p-value)"] <= alpha)] = "red"
-    df["group"][(df["logFC"].values <= -fc_threshold) & (df["-log10(p-value)"] <= alpha)] = "blue"
+    df["group"][(df["logFC"].values >= fc_threshold) & (df["p_{corrected}"] <= alpha)] = "red"
+    df["group"][(df["logFC"].values <= -fc_threshold) & (df["p_{corrected}"] <= alpha)] = "blue"
     df["-log10(p-value)"] = -np.log10(df["-log10(p-value)"])
     return df
 
@@ -89,7 +91,7 @@ def volcano_calc(
 def volcano_plot(
     df,
     logFC_column: str = "logFC",
-    fdr_column: str = "-log10(p-value)",
+    p_column: str = "-log10(p-value)",
     alpha: float = 0.05,
     fc_threshold: float = 1.0,
     **kwargs,
@@ -106,8 +108,8 @@ def volcano_plot(
         DataFrame with data points.
     logFC_column : str, optional
         Column name of logFC column, by default "logFC"
-    fdr_column : str, optional
-        Column name of FDR column, by default "-log10(p-value)"
+    p_column : str, optional
+        Column name of p-value column, by default "-log10(p-value)"
     alpha : float, optional
         Threshold for FDR, by default 0.05.
 
@@ -125,12 +127,12 @@ def volcano_plot(
     title = kwargs.get("title", "Volcano")
     fig = plt.figure(figsize=figsize)
     xlabel = kwargs.get("xlabel", logFC_column)
-    ylabel = kwargs.get("ylabel", r"-log10($p_{corrected}$)")
+    ylabel = kwargs.get("ylabel", p_column)
 
     for color, df_sub in df.groupby("group"):
         plt.plot(
             df_sub[logFC_column].values,
-            df_sub[fdr_column].values,
+            df_sub[p_column].values,
             ls="",
             marker="o",
             color=color,
@@ -201,15 +203,24 @@ def generate_dr_plot(
         )
     if len(columns_to_use) > 2:
         columns_to_use = columns_to_use[:2]
-
-    for label, df_sub in df.groupby(class_label_column):
+    if class_label_column is not None:
+        for label, df_sub in df.groupby(class_label_column):
+            plt.plot(
+                df_sub[columns_to_use[0]].values,
+                df_sub[columns_to_use[1]].values,
+                markersize=marker_size,
+                mfc=mfc,
+                alpha=0.8,
+                label=label,
+                linestyle="None",
+            )
+    else:
         plt.plot(
-            df_sub[columns_to_use[0]].values,
-            df_sub[columns_to_use[1]].values,
+            df[columns_to_use[0]].values,
+            df[columns_to_use[1]].values,
             markersize=marker_size,
             mfc=mfc,
             alpha=0.8,
-            label=label,
             linestyle="None",
         )
     if title is not None:

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-functions.py: Contains default functions and helper for plot generation and
+customization.py: Contains default functions and helper for plot generation and
 customization.
 """
 import matplotlib

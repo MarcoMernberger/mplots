@@ -21,6 +21,19 @@ __copyright__ = "Copyright (c) 2020 Marco Mernberger"
 __license__ = "mit"
 
 
+def calc_correlation_group_heatmap(df, method="pearson"):
+    return df.corr(method="pearson")
+
+
+# def plot_correlation_group_heatmap(df_corr, **kwargs):
+#    title, legend = get_args(title, legend)
+#    print(title, legend)
+#    plt.title(title=tt)
+#    plt.imshow(df_corr, kwargs)
+#    plt.xlabel(df_corr.columns)
+#    plt.ylabel(df_corr.columns)
+
+
 def heatmap(
     df_plot: DataFrame,
     cmap: Union[str, Colormap] = "seismic",

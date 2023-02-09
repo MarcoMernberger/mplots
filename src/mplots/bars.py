@@ -4,6 +4,7 @@
 """bars.py: Contains ...."""
 
 import matplotlib
+
 matplotlib.use("agg")
 import pandas as pd
 import numpy as np
