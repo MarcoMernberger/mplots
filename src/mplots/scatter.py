@@ -162,6 +162,7 @@ def generate_dr_plot(
     This assumes that self.transformed_matrix is an array-like object with shape (n_samples, n_components)
     """
     fontsize_title = params.get("fontsize_title", 12)
+    fontsize_legend = params.get("fontsize_legend", 8)
     custom_order = params.get("custom_order", None)
     show_names = params.get("show_names", False)
     x_label = params.get("xlabel", None)
@@ -238,7 +239,7 @@ def generate_dr_plot(
     plt.gca().set_xlabel(x_label)
     plt.gca().set_ylabel(y_label)
     if class_labels:
-        plt.gca().legend(loc="best")
+        plt.gca().legend(loc="best", fontsize=fontsize_legend)
     if show_names:
         for i, row in df.iterrows():
             plt.annotate(
