@@ -150,6 +150,82 @@ def volcano_plot(
     return fig
 
 
+def volcano_plot_names(
+    df,
+    logFC_column: str = "logFC",
+    p_column: str = "-log10(p-value)",
+    alpha: float = 0.05,
+    fc_threshold: float = 1.0,
+    **kwargs,
+) -> Figure:
+    """
+    Plots a volcano plot.
+
+    Plots a volcano plot and returns a matplotlib figure. It expects a DataFrame
+    with a given log FC column, an fdr column and a group column.
+
+    Parameters
+    ----------
+    df : _type_
+        DataFrame with data points.
+    logFC_column : str, optional
+        Column name of logFC column, by default "logFC"
+    p_column : str, optional
+        Column name of p-value column, by default "-log10(p-value)"
+    alpha : float, optional
+        Threshold for FDR, by default 0.05.
+
+    Returns
+    -------
+    Figure
+        Matplotlib figure with volcano plot.
+    """
+    labels = kwargs.get("labels", {"grey": "non-sign.", "red": "up", "blue": "down"})
+    figsize = kwargs.get("figsize", (10, 10))
+    fontsize = kwargs.get("fontsize", 10)
+    fontsize_text = kwargs.get("fontsize_text", 10)
+    show_names = kwargs.get("show_names", False)
+    fontsize_title = kwargs.get("fontsize_title", fontsize)
+    fontsize_ticks = kwargs.get("fontsize_ticks", fontsize)
+    fontsize_legend = kwargs.get("fontsize_legend", fontsize)
+    title = kwargs.get("title", "Volcano")
+    fig = plt.figure(figsize=figsize)
+    xlabel = kwargs.get("xlabel", logFC_column)
+    ylabel = kwargs.get("ylabel", p_column)
+
+    for color, df_sub in df.groupby("group"):
+        plt.plot(
+            df_sub[logFC_column].values,
+            df_sub[p_column].values,
+            ls="",
+            marker="o",
+            color=color,
+            label=labels[color],
+        )
+        if show_names and (color in ["red", "blue"]):
+            for index, row in df_sub.iterrows():
+                plt.annotate(
+                    index,
+                    xy=(row[logFC_column], row[p_column]),
+                    xytext=(-1, 1),
+                    textcoords="offset points",
+                    ha="right",
+                    va="bottom",
+                    size=fontsize_text,
+                )
+
+    plt.axhline(-np.log10(alpha), color="lightgrey")
+    plt.axvline(-fc_threshold, color="lightgrey")
+    plt.axvline(fc_threshold, color="lightgrey")
+    plt.ylabel(ylabel, fontsize=fontsize)
+    plt.xlabel(xlabel, fontsize=fontsize)
+    plt.xticks(fontsize=fontsize_ticks)
+    plt.yticks(fontsize=fontsize_ticks)
+    plt.legend(fontsize=fontsize_legend)
+    plt.title(title, fontsize=fontsize_title)
+    return fig
+
+
 def generate_dr_plot(
     df: DataFrame,
     title: str = None,
