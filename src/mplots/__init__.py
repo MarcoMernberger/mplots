@@ -20,6 +20,7 @@ from .scatter import (
     generate_dr_plot,
     plot_correlation,
     volcano_plot_names,
+    volcano_plot_names_cut_y,
 )
 from .customization import *
 from .bars import *
