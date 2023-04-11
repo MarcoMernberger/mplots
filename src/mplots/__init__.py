@@ -14,6 +14,13 @@ finally:
 from .plots import save_figure, plot_hist, plot_boxplots, volcano
 from .jobs import MPPlotJob
 from .heatmaps import heatmap
-from .scatter import volcano_plot, volcano_calc, generate_dr_plot, plot_correlation
+from .scatter import (
+    volcano_plot,
+    volcano_calc,
+    generate_dr_plot,
+    plot_correlation,
+    volcano_plot_names,
+    volcano_plot_names_cut_y,
+)
 from .customization import *
 from .bars import *
