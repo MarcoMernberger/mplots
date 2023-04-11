@@ -49,9 +49,9 @@ def volcano_calc(
     df: DataFrame,
     fc_threshold: float = 1,
     alpha: float = 0.05,
-    logFC_column: str = "logFC",
-    p_column: str = "p-value",
-    fdr_column: str = "FDR",
+    logFC: str = "logFC",
+    p: str = "p-value",
+    fdr: str = "FDR",
 ) -> DataFrame:
     """
     Prepares a givedn data frame for volcano plot.
@@ -68,9 +68,9 @@ def volcano_calc(
         logFC threshold for meaningful regulation, by default 1.
     alpha : float, optional
         FDR threshold, by default 0.05.
-    logFC_column : str, optional
+    logFC : str, optional
         Column name of logFC column, by default "logFC".
-    fdr_column : str, optional
+    fdr : str, optional
         Column name of p-value, by default "p-value".
 
     Returns
@@ -79,7 +79,7 @@ def volcano_calc(
         DataFrame with group variable containing the colors for the plot.
     """
     df = df.rename(
-        columns={logFC_column: "logFC", p_column: "-log10(p-value)", fdr_column: "p_{corrected}"}
+        columns={logFC: "logFC", p: "-log10(p-value)", fdr: "p_{corrected}"}
     )
     df["group"] = ["grey"] * len(df)
     df["group"][(df["logFC"].values >= fc_threshold) & (df["p_{corrected}"] <= alpha)] = "red"
@@ -90,8 +90,8 @@ def volcano_calc(
 
 def volcano_plot(
     df,
-    logFC_column: str = "logFC",
-    p_column: str = "-log10(p-value)",
+    logFC: str = "logFC",
+    p: str = "-log10(p-value)",
     alpha: float = 0.05,
     fc_threshold: float = 1.0,
     **kwargs,
@@ -106,9 +106,9 @@ def volcano_plot(
     ----------
     df : _type_
         DataFrame with data points.
-    logFC_column : str, optional
+    logFC : str, optional
         Column name of logFC column, by default "logFC"
-    p_column : str, optional
+    p : str, optional
         Column name of p-value column, by default "-log10(p-value)"
     alpha : float, optional
         Threshold for FDR, by default 0.05.
@@ -126,13 +126,13 @@ def volcano_plot(
     fontsize_legend = kwargs.get("fontsize_legend", fontsize)
     title = kwargs.get("title", "Volcano")
     fig = plt.figure(figsize=figsize)
-    xlabel = kwargs.get("xlabel", logFC_column)
-    ylabel = kwargs.get("ylabel", p_column)
+    xlabel = kwargs.get("xlabel", logFC)
+    ylabel = kwargs.get("ylabel", p)
 
     for color, df_sub in df.groupby("group"):
         plt.plot(
-            df_sub[logFC_column].values,
-            df_sub[p_column].values,
+            df_sub[logFC].values,
+            df_sub[p].values,
             ls="",
             marker="o",
             color=color,
