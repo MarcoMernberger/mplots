@@ -12,6 +12,7 @@ from cycler import cycler
 import matplotlib.gridspec as grid
 from pandas import DataFrame
 from typing import Union, Tuple
+from .newplot import style_wrapper, add_function_wrapper
 
 matplotlib.use("Agg")
 
@@ -19,6 +20,14 @@ matplotlib.use("Agg")
 __author__ = "Marco Mernberger"
 __copyright__ = "Copyright (c) 2020 Marco Mernberger"
 __license__ = "mit"
+
+
+@style_wrapper
+@add_function_wrapper
+def plot_correlation_map(df, **kwargs):
+    df_corr = df.corr(method="pearson")
+    plt.imshow(df_corr, **kwargs)
+    plt.colorbar(shrink=0.2)
 
 
 def calc_correlation_group_heatmap(df, method="pearson"):

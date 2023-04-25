@@ -14,6 +14,7 @@ import inspect
 from abc import ABC, abstractmethod
 from .jobs import MPPlotJob
 from .scatter import volcano_calc, volcano_plot
+from .newplot import style_wrapper, add_function_wrapper
 
 __author__ = "Marco Mernberger"
 __copyright__ = "Copyright (c) 2020 Marco Mernberger"
@@ -574,6 +575,12 @@ def save_figure(f, folder, name):
     folder.mkdir(exist_ok=True, parents=True)
     for suffix in [".png", ".svg", ".pdf"]:
         f.savefig(folder / (name + suffix))
+
+
+@style_wrapper
+@add_function_wrapper
+def plot_empty(*args, **kwargs):
+    plt.text(0.4, 0.5, "No data to plot")
 
 
 if __name__ == "__main__":
