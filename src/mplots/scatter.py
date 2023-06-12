@@ -78,9 +78,7 @@ def volcano_calc(
     DataFrame
         DataFrame with group variable containing the colors for the plot.
     """
-    df = df.rename(
-        columns={logFC: "logFC", p: "-log10(p-value)", fdr: "p_{corrected}"}
-    )
+    df = df.rename(columns={logFC: "logFC", p: "-log10(p-value)", fdr: "p_{corrected}"})
     df["group"] = ["grey"] * len(df)
     df["group"][(df["logFC"].values >= fc_threshold) & (df["p_{corrected}"] <= alpha)] = "red"
     df["group"][(df["logFC"].values <= -fc_threshold) & (df["p_{corrected}"] <= alpha)] = "blue"
@@ -118,7 +116,9 @@ def volcano_plot(
     Figure
         Matplotlib figure with volcano plot.
     """
-    labels = kwargs.get("labels", {"grey": "non-sign.", "red": "up", "blue": "down"})
+    labels = kwargs.get(
+        "labels", {"grey": "non-sign.", "red": f"up (FDR<{alpha})", "blue": f"down (FDR<{alpha})"}
+    )
     figsize = kwargs.get("figsize", (10, 10))
     fontsize = kwargs.get("fontsize", 10)
     fontsize_title = kwargs.get("fontsize_title", fontsize)
@@ -128,7 +128,6 @@ def volcano_plot(
     fig = plt.figure(figsize=figsize)
     xlabel = kwargs.get("xlabel", logFC)
     ylabel = kwargs.get("ylabel", p)
-
     for color, df_sub in df.groupby("group"):
         plt.plot(
             df_sub[logFC].values,
