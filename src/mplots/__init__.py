@@ -24,3 +24,4 @@ from .scatter import (
 )
 from .customization import *
 from .bars import *
+from .newplot import add_function_wrapper, style_wrapper

@@ -30,6 +30,41 @@ def plot_correlation_map(df, **kwargs):
     plt.colorbar(shrink=0.2)
 
 
+@style_wrapper
+@add_function_wrapper
+def hmap(df):
+    plt.imshow(df, cmap="seismic", aspect="equal")
+    plt.xticks(np.arange(df.shape[1]), labels=df.columns, rotation=90)
+    plt.colorbar(shrink=0.5)
+
+
+@style_wrapper
+def multihmap(*dfs, title="MultiHeatmap"):
+    f = plt.figure(constrained_layout=True)
+    xgrid = sum([d.shape[1] for d in dfs])
+    gs = f.add_gridspec(11, xgrid)
+    dfs = list(dfs)
+    ncol = len(dfs)
+    if ncol == 1:
+        axes = [axes]
+    x = 0
+    for ii, df in enumerate(dfs):
+        newx = x + df.shape[1]
+        ax = f.add_subplot(gs[:, x:newx])
+        if ii > 0:
+            plt.setp(ax.get_yticklabels(), visible=False)
+            ax.tick_params(left=False, labelleft=False)
+        else:
+            plt.yticks(np.arange(df.shape[0]), labels=df.index)
+        plt.sca(ax)
+        plt.imshow(df, aspect="auto", cmap="seismic")
+        plt.xticks(np.arange(df.shape[1]), labels=df.columns, rotation=90)
+        x = newx
+    plt.suptitle(title)
+    plt.tight_layout()
+    return f
+
+
 def calc_correlation_group_heatmap(df, method="pearson"):
     return df.corr(method="pearson")
 
@@ -506,3 +541,14 @@ def plot_empty(outfile, msg="Empty DataFrame"):
     fig = plt.figure()
     plt.text(0.5, 0.5, msg, ha="left", va="center")
     fig.savefig(outfile)
+
+
+@style_wrapper
+@add_function_wrapper
+def plot_correlation(df, correlation="pearson"):
+    df = df.corr(correlation)
+    plt.imshow(df)
+    t, l = np.arange(df.shape[1]), df.columns
+    plt.yticks(t, l)
+    plt.xticks(t, l, rotation=90)
+    plt.colorbar(shrink=0.5)
