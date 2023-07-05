@@ -580,7 +580,11 @@ def save_figure(f, folder, name):
 @style_wrapper
 @add_function_wrapper
 def plot_empty(*args, **kwargs):
-    plt.text(0.4, 0.5, "No data to plot")
+    if len(args) > 0:
+        t = args[0]
+    else:
+        t = "No data to plot"
+    plt.text(0.4, 0.5, t)
 
 
 if __name__ == "__main__":
