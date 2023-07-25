@@ -30,6 +30,8 @@ STYLE_SHORTCUTS = {
     "markerfacecolor": "lines.markerfacecolor",
     "markersize": "lines.markersize",
 }
+MPL_KEYS = mpl.rcParams.keys()
+MPL_GROUPS = [key.split(".")[0] for key in MPL_KEYS]
 
 
 def call_additional_func(func, params):
@@ -59,10 +61,15 @@ def create_style_dict(**kwargs):
     for key in kwargs:
         if key == "styleparams":
             local_style.update(kwargs[key])
-        elif key in mpl.rcParams.keys():
+        elif key in MPL_KEYS:
             local_style[key] = kwargs[key]
         elif key in STYLE_SHORTCUTS:
             local_style[STYLE_SHORTCUTS[key]] = kwargs[key]
+        elif key in MPL_GROUPS:
+            params = kwargs[key]
+            if isinstance(params, dict):
+                for subkey in params:
+                    local_style[f"{key}.{subkey}"] = params[subkey]
         else:
             remaining[key] = kwargs[key]
     return local_style, remaining
@@ -152,3 +159,7 @@ def plot_boxplots(df, **kwargs):
 def print_mpl_rc_params():
     for key in mpl.rcParams.keys():
         print(key.split(".")[-1], key)
+
+
+def wrap_function(func):
+    return style_wrapper(add_function_wrapper(func))
