@@ -11,7 +11,7 @@ finally:
     del get_distribution, DistributionNotFound
 
 
-from .plots import save_figure, plot_hist, plot_boxplots, volcano
+from .plots import save_figure, plot_hist, plot_boxplots, volcano, plot_empty
 from .jobs import MPPlotJob
 from .heatmaps import heatmap
 from .scatter import (
@@ -24,3 +24,4 @@ from .scatter import (
 )
 from .customization import *
 from .bars import *
+from .newplot import add_function_wrapper, style_wrapper

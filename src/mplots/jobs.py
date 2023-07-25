@@ -119,8 +119,8 @@ def MPPlotJob(
         jobtuple.cache.load.depends_on(dependencies)
         jobtuple.table.depends_on(dependencies)
         jobtuple.plot.depends_on(dependencies)
-    if plot_args is not None:
-        jobtuple.plot.depends_on_params(plot_args)
+    # if plot_args is not None:
+    #    jobtuple.plot.depends_on_params(plot_args, job_name_postfix="_plot")
     if render_args is not None:
         jobtuple.plot.depends_on_params(render_args)
     if calc_args is not None:
