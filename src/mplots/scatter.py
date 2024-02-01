@@ -8,6 +8,7 @@ from typing import Optional, Callable, List, Dict, Tuple, Union
 from pypipegraph import Job
 from pandas import DataFrame
 from .jobs import MPPlotJob
+from .newplot import style_wrapper, add_function_wrapper
 import pandas as pd
 import pypipegraph as ppg
 import scipy.stats as st
@@ -80,8 +81,12 @@ def volcano_calc(
     """
     df = df.rename(columns={logFC: "logFC", p: "-log10(p-value)", fdr: "p_{corrected}"})
     df["group"] = ["grey"] * len(df)
-    df["group"][(df["logFC"].values >= fc_threshold) & (df["p_{corrected}"] <= alpha)] = "red"
-    df["group"][(df["logFC"].values <= -fc_threshold) & (df["p_{corrected}"] <= alpha)] = "blue"
+    df["group"][
+        (df["logFC"].values >= fc_threshold) & (df["p_{corrected}"] <= alpha)
+    ] = "red"
+    df["group"][
+        (df["logFC"].values <= -fc_threshold) & (df["p_{corrected}"] <= alpha)
+    ] = "blue"
     df["-log10(p-value)"] = -np.log10(df["-log10(p-value)"])
     return df
 
@@ -117,7 +122,12 @@ def volcano_plot(
         Matplotlib figure with volcano plot.
     """
     labels = kwargs.get(
-        "labels", {"grey": "non-sign.", "red": f"up (FDR<{alpha})", "blue": f"down (FDR<{alpha})"}
+        "labels",
+        {
+            "grey": "non-sign.",
+            "red": f"up (FDR<{alpha})",
+            "blue": f"down (FDR<{alpha})",
+        },
     )
     figsize = kwargs.get("figsize", (10, 10))
     fontsize = kwargs.get("fontsize", 10)
@@ -340,7 +350,9 @@ def generate_dr_plot(
     mfc = params.get("mfc", None)
     if not isinstance(custom_cycler, Cycler):
         custom_cycler = default_cycler()
-    f = plt.figure(figsize=(fig_x, fig_y), dpi=dpi, frameon=True, edgecolor="k", linewidth=2)
+    f = plt.figure(
+        figsize=(fig_x, fig_y), dpi=dpi, frameon=True, edgecolor="k", linewidth=2
+    )
     axe = plt.gca()
     axe.set_prop_cycle(custom_cycler)
     columns_to_use = list(df.columns.values)
@@ -449,7 +461,9 @@ def plot_correlation(df, column_x, column_y, pearson=True, **kwargs):
     plt.ylabel(ylabel, fontsize=fontsize_label)
     plt.title(title, fontsize=fontsize_title)
     plt.tight_layout()
-    plt.text(0.02, 0.94, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes)
+    plt.text(
+        0.02, 0.94, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes
+    )
     return fig
 
 
@@ -527,7 +541,9 @@ def plot_logfcs(
     plt.title(title, fontsize=fontsize_title)
     plt.legend(fontsize=fontsize_legend, loc="upper right")
     plt.tight_layout()
-    plt.text(0.02, 0.96, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes)
+    plt.text(
+        0.02, 0.96, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes
+    )
     return fig
 
 
@@ -560,5 +576,83 @@ def plot_correlation(df, column_x, column_y, pearson=True, **kwargs):
     plt.ylabel(ylabel, fontsize=fontsize_label)
     plt.title(title, fontsize=fontsize_title)
     plt.tight_layout()
-    plt.text(0.02, 0.94, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes)
+    plt.text(
+        0.02, 0.94, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes
+    )
     return fig
+
+
+@style_wrapper
+@add_function_wrapper
+def volcano_plot_names_pastel(
+    df,
+    names_to_show: Optional[List[str]] = None,
+    logFC_column: str = "logFC",
+    p_column: str = "-log10(p-value)",
+    alpha: float = 0.05,
+    fc_threshold: float = 1.0,
+    **kwargs,
+):
+    def pastel(color):
+        if names_to_show is None:
+            return color
+        if color == "red":
+            return "pink"
+        if color == "blue":
+            return "lightskyblue"
+        return color
+
+    labels = kwargs.get(
+        "labels",
+        {"grey": "non-sign.", "red": "up (FDR<0.05)", "blue": "down (FDR<0.05)"},
+    )
+    fontsize = kwargs.get("fontsize", 10)
+    fontsize_text = kwargs.get("fontsize_text", 10)
+    show_names = kwargs.get("show_names", False)
+    fontsize_ticks = kwargs.get("fontsize_ticks", fontsize)
+    fontsize_legend = kwargs.get("fontsize_legend", fontsize)
+    legend_loc = kwargs.get("legend_loc", "best")
+    xlabel = kwargs.get("xlabel", logFC_column)
+    ylabel = kwargs.get("ylabel", p_column)
+    if names_to_show is not None:
+        df_names = df.loc[names_to_show]
+        df_plot = df.loc[df.index.difference(names_to_show)]
+    else:
+        df_plot = df
+    for color, df_sub in df_plot.groupby("group"):
+        plt.plot(
+            df_sub[logFC_column].values,
+            df_sub[p_column].values,
+            ls="",
+            marker=".",
+            color=pastel(color),
+            label=labels[color],
+        )
+    for color, df_sub in df_names.groupby("group"):
+        plt.plot(
+            df_sub[logFC_column].values,
+            df_sub[p_column].values,
+            ls="",
+            marker=".",
+            color=color,
+        )
+        if show_names and (color in ["red", "blue"]):
+            for index, row in df_sub.iterrows():
+                if index in names_to_show:
+                    plt.annotate(
+                        index,
+                        xy=(row[logFC_column], row[p_column]),
+                        xytext=(-1, 1),
+                        textcoords="offset points",
+                        ha="right",
+                        va="bottom",
+                        size=fontsize_text,
+                    )
+    plt.axhline(-np.log10(alpha), color="lightgrey")
+    plt.axvline(-fc_threshold, color="lightgrey")
+    plt.axvline(fc_threshold, color="lightgrey")
+    plt.ylabel(ylabel, fontsize=fontsize)
+    plt.xlabel(xlabel, fontsize=fontsize)
+    plt.xticks(fontsize=fontsize_ticks)
+    plt.yticks(fontsize=fontsize_ticks)
+    plt.legend(fontsize=fontsize_legend, loc=legend_loc)
