@@ -571,10 +571,10 @@ class Box(Plot):
 # inspect.getfullargspec(plt.plot)
 
 
-def save_figure(f, folder, name):
+def save_figure(f, folder, name, bbox_inches="tight"):
     folder.mkdir(exist_ok=True, parents=True)
     for suffix in [".png", ".svg", ".pdf"]:
-        f.savefig(folder / (name + suffix))
+        f.savefig(folder / (name + suffix), bbox_inches=bbox_inches)
 
 
 @style_wrapper

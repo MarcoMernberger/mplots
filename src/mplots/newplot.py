@@ -29,6 +29,7 @@ STYLE_SHORTCUTS = {
     "markeredgewidth": "lines.markeredgewidth",
     "markerfacecolor": "lines.markerfacecolor",
     "markersize": "lines.markersize",
+    "savefigfacecolor": "savefig.facecolor",
 }
 MPL_KEYS = mpl.rcParams.keys()
 MPL_GROUPS = [key.split(".")[0] for key in MPL_KEYS]
@@ -149,7 +150,14 @@ def plot_boxplots(df, **kwargs):
     flierprops = kwargs.pop("flierprops", {"markersize": 2})
     notch = kwargs.pop("notch", True)
     figure = plt.figure(figsize=figsize)
-    plt.boxplot(df, patch_artist=True, labels=df.columns, sym=sym, flierprops=flierprops, **kwargs)
+    plt.boxplot(
+        df,
+        patch_artist=True,
+        labels=df.columns,
+        sym=sym,
+        flierprops=flierprops,
+        **kwargs,
+    )
     plt.xticks(rotation=rotation)
     plt.ylabel(ylabel)
     plt.title(title)

@@ -39,6 +39,17 @@ def hmap(df):
 
 
 @style_wrapper
+@add_function_wrapper
+def heatmap_simple(df, no_yticks=False):
+    vmax = df.abs().max().max()
+    norm = matplotlib.colors.Normalize(-vmax, vmax)
+    aspect = "auto"
+    plt.imshow(df, aspect=aspect, cmap="seismic", norm=norm)
+    plt.xticks(np.arange(df.shape[1]), labels=df.columns, rotation=90)
+    plt.yticks(np.arange(df.shape[0]), labels=df.index)
+
+
+@style_wrapper
 def multihmap(*dfs, title="MultiHeatmap"):
     f = plt.figure(constrained_layout=True)
     xgrid = sum([d.shape[1] for d in dfs])
@@ -197,7 +208,9 @@ def generate_heatmap_figure(
         "lt",
     ]
     if legend_location is not None and legend_location not in allowed_legend_locations:
-        raise ValueError("Legend location must be one of {}.".format(allowed_legend_locations))
+        raise ValueError(
+            "Legend location must be one of {}.".format(allowed_legend_locations)
+        )
     if not show_row_label:
         inches_right = dodge
         if legend_location in ["br", "rb", "tr", "rt"]:
@@ -240,7 +253,9 @@ def generate_heatmap_figure(
                 check_x, check_y
             )
         )
-    f = plt.figure(figsize=(fig_x, fig_y), dpi=dpi, frameon=True, edgecolor="k", linewidth=2)
+    f = plt.figure(
+        figsize=(fig_x, fig_y), dpi=dpi, frameon=True, edgecolor="k", linewidth=2
+    )
     gridspec = grid.GridSpec(grid_y, grid_x)
     gridspec.update(wspace=0, hspace=0)
 
@@ -259,7 +274,9 @@ def generate_heatmap_figure(
         ax_dendro_row = plt.subplot(
             gridspec[
                 rows_per_inch * inches_top : len_y + rows_per_inch * inches_top,
-                start_dendro_left * columns_per_inch : start_dendro_left * columns_per_inch
+                start_dendro_left
+                * columns_per_inch : start_dendro_left
+                * columns_per_inch
                 + columns_per_inch * inch_for_dendro_left,
             ]
         )
@@ -422,7 +439,8 @@ def generate_heatmap_figure(
             ax_color = plt.subplot(
                 gridspec[
                     0:rows_per_inch,
-                    columns_per_inch * inches_left : len_x + columns_per_inch * inches_left,
+                    columns_per_inch * inches_left : len_x
+                    + columns_per_inch * inches_left,
                 ]
             )
             bounds = list(ax_color.get_position().bounds)
@@ -437,7 +455,8 @@ def generate_heatmap_figure(
             ax_color = plt.subplot(
                 gridspec[
                     grid_y - rows_per_inch : grid_y,
-                    columns_per_inch * inches_left : len_x + columns_per_inch * inches_left,
+                    columns_per_inch * inches_left : len_x
+                    + columns_per_inch * inches_left,
                 ]
             )
             bounds = list(ax_color.get_position().bounds)
@@ -488,7 +507,12 @@ def generate_heatmap_figure(
 
 
 def generate_heatmap_simple_figure(
-    df, title=None, show_column_label=True, show_row_label=False, label_function=None, **params
+    df,
+    title=None,
+    show_column_label=True,
+    show_row_label=False,
+    label_function=None,
+    **params
 ):
     """
     Plots a heatmap. No fancy shit.
@@ -505,7 +529,9 @@ def generate_heatmap_simple_figure(
     if fig_y > 30:
         guess_shrink = 0.1
     shrink = params.get("shrink", guess_shrink)
-    f = plt.figure(figsize=(fig_x, fig_y), dpi=dpi, frameon=True, edgecolor="k", linewidth=2)
+    f = plt.figure(
+        figsize=(fig_x, fig_y), dpi=dpi, frameon=True, edgecolor="k", linewidth=2
+    )
     colormap = params.get("colormap", "seismic")
     vmax = params.get("vmax", df.abs().max().max())
     vmin = -vmax  # to ensure zero midpoint
@@ -519,7 +545,9 @@ def generate_heatmap_simple_figure(
         if label_function is not None:
             columns = [label_function(label) for label in df.columns.values]
         plt.gca().set_xticks(range(len(df.columns)))
-        plt.gca().set_xticklabels(columns, rotation=75, ha="right", fontsize=fontsize_columns)
+        plt.gca().set_xticklabels(
+            columns, rotation=75, ha="right", fontsize=fontsize_columns
+        )
     else:
         plt.gca().set_xticklabels([])
     if show_row_label:
