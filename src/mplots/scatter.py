@@ -80,8 +80,12 @@ def volcano_calc(
     """
     df = df.rename(columns={logFC: "logFC", p: "-log10(p-value)", fdr: "p_{corrected}"})
     df["group"] = ["grey"] * len(df)
-    df["group"][(df["logFC"].values >= fc_threshold) & (df["p_{corrected}"] <= alpha)] = "red"
-    df["group"][(df["logFC"].values <= -fc_threshold) & (df["p_{corrected}"] <= alpha)] = "blue"
+    df["group"][
+        (df["logFC"].values >= fc_threshold) & (df["p_{corrected}"] <= alpha)
+    ] = "red"
+    df["group"][
+        (df["logFC"].values <= -fc_threshold) & (df["p_{corrected}"] <= alpha)
+    ] = "blue"
     df["-log10(p-value)"] = -np.log10(df["-log10(p-value)"])
     return df
 
@@ -117,7 +121,12 @@ def volcano_plot(
         Matplotlib figure with volcano plot.
     """
     labels = kwargs.get(
-        "labels", {"grey": "non-sign.", "red": f"up (FDR<{alpha})", "blue": f"down (FDR<{alpha})"}
+        "labels",
+        {
+            "grey": "non-sign.",
+            "red": f"up (FDR<{alpha})",
+            "blue": f"down (FDR<{alpha})",
+        },
     )
     figsize = kwargs.get("figsize", (10, 10))
     fontsize = kwargs.get("fontsize", 10)
@@ -340,7 +349,9 @@ def generate_dr_plot(
     mfc = params.get("mfc", None)
     if not isinstance(custom_cycler, Cycler):
         custom_cycler = default_cycler()
-    f = plt.figure(figsize=(fig_x, fig_y), dpi=dpi, frameon=True, edgecolor="k", linewidth=2)
+    f = plt.figure(
+        figsize=(fig_x, fig_y), dpi=dpi, frameon=True, edgecolor="k", linewidth=2
+    )
     axe = plt.gca()
     axe.set_prop_cycle(custom_cycler)
     columns_to_use = list(df.columns.values)
@@ -449,7 +460,9 @@ def plot_correlation(df, column_x, column_y, pearson=True, **kwargs):
     plt.ylabel(ylabel, fontsize=fontsize_label)
     plt.title(title, fontsize=fontsize_title)
     plt.tight_layout()
-    plt.text(0.02, 0.94, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes)
+    plt.text(
+        0.02, 0.94, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes
+    )
     return fig
 
 
@@ -527,7 +540,9 @@ def plot_logfcs(
     plt.title(title, fontsize=fontsize_title)
     plt.legend(fontsize=fontsize_legend, loc="upper right")
     plt.tight_layout()
-    plt.text(0.02, 0.96, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes)
+    plt.text(
+        0.02, 0.96, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes
+    )
     return fig
 
 
@@ -560,5 +575,7 @@ def plot_correlation(df, column_x, column_y, pearson=True, **kwargs):
     plt.ylabel(ylabel, fontsize=fontsize_label)
     plt.title(title, fontsize=fontsize_title)
     plt.tight_layout()
-    plt.text(0.02, 0.94, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes)
+    plt.text(
+        0.02, 0.94, f"Pearson R = {rho:.3f}\np = {p:.3f}", transform=plt.gca().transAxes
+    )
     return fig
