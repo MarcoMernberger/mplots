@@ -21,6 +21,8 @@ from .scatter import (
     plot_correlation,
     volcano_plot_names,
     volcano_plot_names_cut_y,
+    volcano_plot_names_pastel,
+    plot_logfcs,
 )
 from .customization import *
 from .bars import *

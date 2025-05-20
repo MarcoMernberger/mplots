@@ -50,7 +50,7 @@ def volcano_calc(
     df: DataFrame,
     fc_threshold: float = 1,
     alpha: float = 0.05,
-    logFC: str = "logFC",
+    log2FC: str = "log2FC",
     p: str = "p-value",
     fdr: str = "FDR",
 ) -> DataFrame:
@@ -66,11 +66,11 @@ def volcano_calc(
     df : DataFrame
         DataFrame with data points.
     fc_threshold : float, optional
-        logFC threshold for meaningful regulation, by default 1.
+        log2FC threshold for meaningful regulation, by default 1.
     alpha : float, optional
         FDR threshold, by default 0.05.
-    logFC : str, optional
-        Column name of logFC column, by default "logFC".
+    log2FC : str, optional
+        Column name of log2FC column, by default "log2FC".
     fdr : str, optional
         Column name of p-value, by default "p-value".
 
@@ -79,21 +79,16 @@ def volcano_calc(
     DataFrame
         DataFrame with group variable containing the colors for the plot.
     """
-    df = df.rename(columns={logFC: "logFC", p: "-log10(p-value)", fdr: "p_{corrected}"})
     df["group"] = ["grey"] * len(df)
-    df["group"][
-        (df["logFC"].values >= fc_threshold) & (df["p_{corrected}"] <= alpha)
-    ] = "red"
-    df["group"][
-        (df["logFC"].values <= -fc_threshold) & (df["p_{corrected}"] <= alpha)
-    ] = "blue"
-    df["-log10(p-value)"] = -np.log10(df["-log10(p-value)"])
+    df["group"][(df[log2FC].values >= fc_threshold) & (df[fdr] < alpha)] = "red"
+    df["group"][(df[log2FC].values <= -fc_threshold) & (df[fdr] < alpha)] = "blue"
+    df[p] = -np.log10(df[p])
     return df
 
 
 def volcano_plot(
     df,
-    logFC: str = "logFC",
+    log2FC: str = "log2FC",
     p: str = "-log10(p-value)",
     alpha: float = 0.05,
     fc_threshold: float = 1.0,
@@ -109,8 +104,8 @@ def volcano_plot(
     ----------
     df : _type_
         DataFrame with data points.
-    logFC : str, optional
-        Column name of logFC column, by default "logFC"
+    log2FC : str, optional
+        Column name of log2FC column, by default "log2FC"
     p : str, optional
         Column name of p-value column, by default "-log10(p-value)"
     alpha : float, optional
@@ -136,11 +131,11 @@ def volcano_plot(
     fontsize_legend = kwargs.get("fontsize_legend", fontsize)
     title = kwargs.get("title", "Volcano")
     fig = plt.figure(figsize=figsize)
-    xlabel = kwargs.get("xlabel", logFC)
+    xlabel = kwargs.get("xlabel", log2FC)
     ylabel = kwargs.get("ylabel", p)
     for color, df_sub in df.groupby("group"):
         plt.plot(
-            df_sub[logFC].values,
+            df_sub[log2FC].values,
             df_sub[p].values,
             ls="",
             marker="o",
@@ -161,7 +156,7 @@ def volcano_plot(
 
 def volcano_plot_names(
     df,
-    logFC_column: str = "logFC",
+    log2FC_column: str = "log2FC",
     p_column: str = "-log10(p-value)",
     alpha: float = 0.05,
     fc_threshold: float = 1.0,
@@ -177,8 +172,8 @@ def volcano_plot_names(
     ----------
     df : _type_
         DataFrame with data points.
-    logFC_column : str, optional
-        Column name of logFC column, by default "logFC"
+    log2FC_column : str, optional
+        Column name of log2FC column, by default "log2FC"
     p_column : str, optional
         Column name of p-value column, by default "-log10(p-value)"
     alpha : float, optional
@@ -199,12 +194,12 @@ def volcano_plot_names(
     fontsize_legend = kwargs.get("fontsize_legend", fontsize)
     title = kwargs.get("title", "Volcano")
     fig = plt.figure(figsize=figsize)
-    xlabel = kwargs.get("xlabel", logFC_column)
+    xlabel = kwargs.get("xlabel", log2FC_column)
     ylabel = kwargs.get("ylabel", p_column)
 
     for color, df_sub in df.groupby("group"):
         plt.plot(
-            df_sub[logFC_column].values,
+            df_sub[log2FC_column].values,
             df_sub[p_column].values,
             ls="",
             marker="o",
@@ -215,7 +210,7 @@ def volcano_plot_names(
             for index, row in df_sub.iterrows():
                 plt.annotate(
                     index,
-                    xy=(row[logFC_column], row[p_column]),
+                    xy=(row[log2FC_column], row[p_column]),
                     xytext=(-1, 1),
                     textcoords="offset points",
                     ha="right",
@@ -238,7 +233,7 @@ def volcano_plot_names(
 def volcano_plot_names_cut_y(
     df: DataFrame,
     max_pvalue: float,
-    logFC_column: str = "logFC",
+    log2FC_column: str = "log2FC",
     p_column: str = "-log10(p-value)",
     alpha: float = 0.05,
     fc_threshold: float = 1.0,
@@ -254,8 +249,8 @@ def volcano_plot_names_cut_y(
     ----------
     df : _type_
         DataFrame with data points.
-    logFC_column : str, optional
-        Column name of logFC column, by default "logFC"
+    log2FC_column : str, optional
+        Column name of log2FC column, by default "log2FC"
     p_column : str, optional
         Column name of p-value column, by default "-log10(p-value)"
     alpha : float, optional
@@ -276,13 +271,13 @@ def volcano_plot_names_cut_y(
     fontsize_legend = kwargs.get("fontsize_legend", fontsize)
     title = kwargs.get("title", "Volcano")
     fig = plt.figure(figsize=figsize)
-    xlabel = kwargs.get("xlabel", logFC_column)
+    xlabel = kwargs.get("xlabel", log2FC_column)
     ylabel = kwargs.get("ylabel", p_column)
     df_scatter = df[df["-log10(p-value)"] <= max_pvalue]
     df_outliers = df[df["-log10(p-value)"] > max_pvalue]
     for color, df_sub in df_scatter.groupby("group"):
         plt.plot(
-            df_sub[logFC_column].values,
+            df_sub[log2FC_column].values,
             df_sub[p_column].values,
             ls="",
             marker="o",
@@ -293,7 +288,7 @@ def volcano_plot_names_cut_y(
     df_outliers["-log10(p-value)"] = ylims[1]
     for color, df_sub in df_outliers.groupby("group"):
         plt.plot(
-            df_sub[logFC_column].values,
+            df_sub[log2FC_column].values,
             df_sub[p_column].values,
             ls="",
             marker="^",
@@ -307,7 +302,7 @@ def volcano_plot_names_cut_y(
         for index, row in df_names.iterrows():
             plt.annotate(
                 index,
-                xy=(row[logFC_column], row[p_column]),
+                xy=(row[log2FC_column], row[p_column]),
                 xytext=(2, -2),
                 textcoords="offset points",
                 ha="left",
@@ -475,7 +470,7 @@ def plot_logfcs(
     fc_col1,
     fc_col2,
     mangler,
-    logfc=1,
+    log2FC=1,
     fdr=0.05,
     show_names=True,
     **kwargs,
@@ -489,14 +484,14 @@ def plot_logfcs(
     figsize = kwargs.get("figsize", (10, 10))
     title = kwargs.get(
         "title",
-        f"Correlation of Log2FC on {name}\n(logFC threshold = {logfc}, FDR threshold = {fdr})",
+        f"Correlation of Log2FC on {name}\n(log2FC threshold = {log2FC}, FDR threshold = {fdr})",
     )
     fig = plt.figure(figsize=figsize)
     rho, p = st.pearsonr(genes[fc_col1], genes[fc_col2])
     fdr_col1 = fc_col1.replace("log2FC", "FDR")
     fdr_col2 = fc_col2.replace("log2FC", "FDR")
-    sig1 = (genes[fc_col1].abs() >= logfc) & (genes[fdr_col1].abs() < fdr)
-    sig2 = (genes[fc_col2].abs() >= logfc) & (genes[fdr_col2].abs() < fdr)
+    sig1 = (genes[fc_col1].abs() >= log2FC) & (genes[fdr_col1].abs() < fdr)
+    sig2 = (genes[fc_col2].abs() >= log2FC) & (genes[fdr_col2].abs() < fdr)
     sig_both = sig1 & sig2
     no_sig = ~(sig_both | sig1 | sig2)
     max_val = np.amax([np.abs(genes[fc_col1]), np.abs(genes[fc_col2])])
@@ -587,8 +582,9 @@ def plot_correlation(df, column_x, column_y, pearson=True, **kwargs):
 def volcano_plot_names_pastel(
     df,
     names_to_show: Optional[List[str]] = None,
-    logFC_column: str = "logFC",
+    log2FC_column: str = "log2FC",
     p_column: str = "-log10(p-value)",
+    fdr_column: str = "FDR",
     alpha: float = 0.05,
     fc_threshold: float = 1.0,
     **kwargs,
@@ -612,25 +608,33 @@ def volcano_plot_names_pastel(
     fontsize_ticks = kwargs.get("fontsize_ticks", fontsize)
     fontsize_legend = kwargs.get("fontsize_legend", fontsize)
     legend_loc = kwargs.get("legend_loc", "best")
-    xlabel = kwargs.get("xlabel", logFC_column)
-    ylabel = kwargs.get("ylabel", p_column)
-    if names_to_show is not None:
-        df_names = df.loc[names_to_show]
-        df_plot = df.loc[df.index.difference(names_to_show)]
+    xlabel = kwargs.get("xlabel", "log2FC")
+    ylabel = kwargs.get("ylabel", "-log10(p-value)")
+    if "group" not in df.columns:
+        df_plot = volcano_calc(
+            df.copy(),
+            fc_threshold=fc_threshold,
+            alpha=alpha,
+            log2FC=log2FC_column,
+            p=p_column,
+            fdr=fdr_column,
+        )
     else:
-        df_plot = df
+        df_plot = df.copy()
+    if names_to_show is not None:
+        df_plot = df_plot.loc[df_plot.index.difference(names_to_show)]
     for color, df_sub in df_plot.groupby("group"):
         plt.plot(
-            df_sub[logFC_column].values,
+            df_sub[log2FC_column].values,
             df_sub[p_column].values,
             ls="",
             marker=".",
             color=pastel(color),
             label=labels[color],
         )
-    for color, df_sub in df_names.groupby("group"):
+    for color, df_sub in df_plot.groupby("group"):
         plt.plot(
-            df_sub[logFC_column].values,
+            df_sub[log2FC_column].values,
             df_sub[p_column].values,
             ls="",
             marker=".",
@@ -641,7 +645,7 @@ def volcano_plot_names_pastel(
                 if index in names_to_show:
                     plt.annotate(
                         index,
-                        xy=(row[logFC_column], row[p_column]),
+                        xy=(row[log2FC_column], row[p_column]),
                         xytext=(-1, 1),
                         textcoords="offset points",
                         ha="right",
